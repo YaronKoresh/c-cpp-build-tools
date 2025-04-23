@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:86ca54f873e5aa23fca52c2eac2879e78c11b596a1061d04117d11886b268bcb
-size 224
+@echo off
+setlocal ENABLEDELAYEDEXPANSION
+
+set "dp=%~dp0"
+cd !dp!
+
+set /p "pth=File path: "
+set /p "inc=Include path: "
+
+call node.exe .\bundler\main.js "!pth!" "!pth!-prod-bundle.txt" "0" "include\windows,%inc%"
+
+pause

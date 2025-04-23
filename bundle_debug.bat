@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:995f16c1642ae21e12a1e47154e91703a7875ce89e02c11089c709796dd2b811
-size 225
+@echo off
+setlocal ENABLEDELAYEDEXPANSION
+
+set "dp=%~dp0"
+cd !dp!
+
+set /p "pth=File path: "
+set /p "inc=Include path: "
+
+call node.exe .\bundler\main.js "!pth!" "!pth!-debug-bundle.txt" "1" "include\windows,%inc%"
+
+pause
