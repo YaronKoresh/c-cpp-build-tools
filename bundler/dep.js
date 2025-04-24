@@ -6,10 +6,10 @@ let bad_words = [];
 
 let forbidden_headers = [
     "^$",
-    "_STL_INTRIN_HEADER",
+    "^_STL_INTRIN_HEADER$",
 ];
 
-const headers_redirection = { }
+const headers_redirection = { };
 
 const langToExt = {
 	"C/C++": [".h",".hpp",".c",".cc",".cpp",".inl",".idl",".xml",".acf",".dlg",".inc",".rh",".tcc",""]
@@ -31,6 +31,8 @@ let debugger_vals = [];
 
 let lastFile = null;
 let _lastFile = [];
+
+let externC = null;
 
 let lines = {
 	"include": {},
@@ -202,19 +204,11 @@ function ProcessFile(file) {
 		}
 
 		if( lang === "C/C++" ){
-			SafeAppendToOutput("#define _WIN64 1")
-			SafeAppendToOutput("#define _M_X64 100")
-			SafeAppendToOutput("#define NDEBUG 1")
-			SafeAppendToOutput("#define _MT 1")
-			SafeAppendToOutput("#define _CHAR_UNSIGNED 0")
-			SafeAppendToOutput("#define _M_ARM64EC")
-
 			depth.include++;
-			ProcessFile("corecrt.h");
+			ProcessFile("winuser.h");
 			depth.include--;
-
 			depth.include++;
-			ProcessFile("__msvc_all_public_headers.hpp");
+			ProcessFile("windows.h");
 			depth.include--;
 		}
 
@@ -229,8 +223,19 @@ function ProcessFile(file) {
 		SafeAppendToOutput( `// Processing depth is ${depth.include}: ` + file, false);
 	}
 
+	if( (file.endsWith(".h") || file.endsWith(".c")) && (!externC) && depth.include === 1 ){
+		externC = file;
+		depth["if"+depth.if].curly += 1;
+		SafeAppendToOutput('extern "C" { // Added');
+	}
+
 	if( lang == "C/C++" ){
 		ImportToCppC(file);
+	}
+
+	if( (file.endsWith(".h") || file.endsWith(".c")) && externC && externC === file && depth.include === 1 ){
+		SafeAppendToOutput('} // Added');
+		depth["if"+depth.if].curly -= 1;
 	}
 
 	if(comm){
@@ -593,7 +598,8 @@ function ReplaceAppend(){
 
 	if(
 		Start("typedef", "__int64", "__int32", "__int16", "__int8") &&
-		!Start("typedef unsigned")
+		!Start("typedef unsigned") &&
+		!Start("typedef signed __int")
 	){
 		Into(
 			Line().replace("__int8","signed char").replace("__int16","signed short").replace("__int32","signed int").replace("__int64","signed long long")
